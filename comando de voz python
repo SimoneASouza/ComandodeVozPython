@@ -1,19 +1,21 @@
 import speech_recognition as sr
-import pyttsx3
 import datetime
 import wikipedia
 import pywhatkit
 import webbrowser
-
+import pyttsx3
 
 audio = sr.Recognizer()
 maquina = pyttsx3.init()
 
 
 def executa_comando():
+    comando = ""  # Inicializa com valor vazio
     try:
         with sr.Microphone() as source:
-            print('Ouvindo..')
+            print('Ajustando para o ruído ambiente...')
+            audio.adjust_for_ambient_noise(source)
+            print('Ouvindo...')
             voz = audio.listen(source)
             comando = audio.recognize_google(voz, language='pt-BR')
             comando = comando.lower()
@@ -21,34 +23,48 @@ def executa_comando():
                 comando = comando.replace('cloe', '')
                 maquina.say(comando)
                 maquina.runAndWait()
-
-    except:
-        print('Microfone não está ok')
-
+    except Exception as e:
+        print(f'Erro no reconhecimento de voz: {e}')
     return comando
+
 
 def comando_voz_usuario():
     comando = executa_comando()
+
+    if not comando:
+        maquina.say("Não entendi o comando.")
+        maquina.runAndWait()
+        return
+
     if 'horas' in comando:
         hora = datetime.datetime.now().strftime('%H:%M')
-        maquina.say('Simone, agora são' + hora) # resposta que a máquina vai te dar em voz! mais o horário em digitos.
+        maquina.say('Simone, agora são ' + hora)
         maquina.runAndWait()
+
     elif 'procure por' in comando:
         procurar = comando.replace('procure por', '')
         wikipedia.set_lang('pt')
-        resultado = wikipedia.summary(procurar, 2)
-        print(resultado)
-        maquina.say(resultado)
+        try:
+            resultado = wikipedia.summary(procurar, 2)
+            print(resultado)
+            maquina.say(resultado)
+        except wikipedia.exceptions.DisambiguationError as e:
+            maquina.say("O termo é ambíguo. Seja mais específico.")
+        except wikipedia.exceptions.PageError:
+            maquina.say("Não encontrei nada sobre isso.")
         maquina.runAndWait()
+
     elif 'abrir youtube e reproduzir' in comando:
         musica = comando.replace('abrir youtube e reproduzir', '')
-        resultado = pywhatkit.playonyt(musica)
-        maquina.say(' Aqui está, Simone.') # resposta que a máquina vai te dar em voz!
+        pywhatkit.playonyt(musica)
+        maquina.say('Aqui está, Simone.')
         maquina.runAndWait()
+
     elif "abrir o navegador" in comando:
         print("Abrindo o navegador...")
         webbrowser.open("https://www.google.com")
-        maquina.say('Aqui está Simone. Abrindo o navegador') # resposta que a máquina vai te dar em voz!
+        maquina.say('Abrindo o navegador, Simone!')
         maquina.runAndWait()
+
 
 comando_voz_usuario()
